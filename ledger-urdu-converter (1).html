@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>کھاتہ ترجمہ کار — Ledger Translator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root {
+    --ink: #1a1207;
+    --parchment: #f5edd6;
+    --parchment-deep: #e8d9b5;
+    --gold: #b8860b;
+    --gold-light: #d4a017;
+    --gold-pale: #f0e0a0;
+    --red-accent: #8b2020;
+    --green-accent: #1a4a1a;
+    --border: #c9a84c;
+    --shadow: rgba(90, 60, 10, 0.25);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #2c1f0e;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(180,130,30,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(100,60,10,0.15) 0%, transparent 60%);
+    min-height: 100vh;
+    font-family: 'Amiri', serif;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 36px;
+    color: var(--gold-light);
+  }
+
+  .header h1 {
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 700;
+    color: var(--gold-light);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    letter-spacing: 0.02em;
+    line-height: 1.6;
+  }
+
+  .header .sub {
+    font-size: 1rem;
+    color: #c8a86a;
+    margin-top: 6px;
+    direction: ltr;
+    font-family: 'Amiri', serif;
+    letter-spacing: 0.04em;
+  }
+
+  .ornament {
+    font-size: 1.6rem;
+    color: var(--gold);
+    margin: 0 12px;
+    opacity: 0.8;
+  }
+
+  /* Upload card */
+  .upload-card {
+    background: var(--parchment);
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23b8860b' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 8px 32px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.6);
+    padding: 36px 40px;
+    width: 100%;
+    max-width: 680px;
+    position: relative;
+  }
+
+  .upload-card::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border: 1px solid rgba(184,134,11,0.3);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 3px;
+    padding: 44px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255,255,255,0.3);
+    direction: ltr;
+  }
+
+  .drop-zone:hover, .drop-zone.drag-over {
+    background: rgba(184,134,11,0.08);
+    border-color: var(--gold-light);
+  }
+
+  .drop-zone input[type=file] { display: none; }
+
+  .drop-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .drop-zone p {
+    font-family: 'Amiri', serif;
+    font-size: 1.1rem;
+    color: #6b4c1a;
+    line-height: 1.6;
+  }
+
+  .drop-zone .urdu-label {
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: 1.3rem;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 6px;
+    direction: rtl;
+  }
+
+  .file-name {
+    margin-top: 14px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--green-accent);
+    background: rgba(26,74,26,0.08);
+    padding: 6px 12px;
+    border-radius: 3px;
+    display: none;
+    direction: ltr;
+    word-break: break-all;
+  }
+
+  .btn-convert {
+    width: 100%;
+    margin-top: 22px;
+    padding: 14px;
+    background: linear-gradient(135deg, #8b6914, #b8860b, #d4a017, #b8860b);
+    background-size: 200% 200%;
+    color: #fff8e8;
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    border: 1px solid #a07010;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+    letter-spacing: 0.02em;
+  }
+
+  .btn-convert:hover:not(:disabled) {
+    background-position: right;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    transform: translateY(-1px);
+  }
+
+  .btn-convert:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Status / Loading */
+  .status-bar {
+    margin-top: 16px;
+    padding: 10px 16px;
+    border-radius: 3px;
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: 1rem;
+    text-align: center;
+    display: none;
+  }
+
+  .status-bar.loading {
+    display: block;
+    background: rgba(26,74,26,0.1);
+    color: var(--green-accent);
+    border: 1px solid rgba(26,74,26,0.2);
+  }
+
+  .status-bar.error {
+    display: block;
+    background: rgba(139,32,32,0.1);
+    color: var(--red-accent);
+    border: 1px solid rgba(139,32,32,0.2);
+    direction: ltr;
+    font-family: 'Amiri', serif;
+    font-size: 0.9rem;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid #1a4a1a;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===================== LEDGER OUTPUT ===================== */
+  .output-wrapper {
+    width: 100%;
+    max-width: 900px;
+    margin-top: 36px;
+    display: none;
+  }
+
+  .output-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    justify-content: flex-end;
+    direction: ltr;
+  }
+
+  .btn-action {
+    padding: 10px 22px;
+    border-radius: 3px;
+    font-family: 'Amiri', serif;
+    font-size: 0.95rem;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+
+  .btn-download {
+    background: var(--green-accent);
+    color: #f0ead8;
+    border-color: #1a4a1a;
+  }
+
+  .btn-download:hover { background: #2a6a2a; }
+
+  /* The ledger sheet itself */
+  #ledger-sheet {
+    background: var(--parchment);
+    background-image:
+      linear-gradient(rgba(184,134,11,0.04) 1px, transparent 1px),
+      url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23b8860b' fill-opacity='0.03'%3E%3Cpolygon points='100 0 0 100 100 200 200 100'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 100% 28px, 60px 60px;
+    border: 3px solid var(--border);
+    border-radius: 2px;
+    box-shadow: 0 12px 48px var(--shadow);
+    padding: 40px;
+    direction: rtl;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #ledger-sheet::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border: 1px solid rgba(184,134,11,0.25);
+    pointer-events: none;
+  }
+
+  .ledger-header {
+    text-align: center;
+    margin-bottom: 28px;
+    padding-bottom: 18px;
+    border-bottom: 2px solid var(--border);
+    position: relative;
+  }
+
+  .ledger-header::after {
+    content: '';
+    position: absolute;
+    bottom: 3px; left: 10%; right: 10%;
+    height: 1px;
+    background: var(--border);
+    opacity: 0.5;
+  }
+
+  .ledger-company {
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--red-accent);
+    line-height: 1.8;
+  }
+
+  .ledger-title {
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: 1.3rem;
+    color: var(--ink);
+    margin: 4px 0;
+    line-height: 1.8;
+  }
+
+  .ledger-meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 24px;
+    margin: 14px 0;
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: 1rem;
+    color: var(--ink);
+    line-height: 2;
+  }
+
+  .meta-item {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+  }
+
+  .meta-label { color: var(--gold); font-weight: 600; }
+
+  /* Table */
+  .ledger-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: 0.95rem;
+    margin-top: 10px;
+  }
+
+  .ledger-table thead tr {
+    background: var(--ink);
+    color: var(--gold-pale);
+  }
+
+  .ledger-table thead th {
+    padding: 10px 12px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    line-height: 1.8;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .ledger-table tbody tr {
+    border-bottom: 1px solid rgba(184,134,11,0.25);
+    transition: background 0.15s;
+  }
+
+  .ledger-table tbody tr:nth-child(even) {
+    background: rgba(184,134,11,0.06);
+  }
+
+  .ledger-table tbody tr.invoice-row {
+    background: rgba(139,32,32,0.05);
+    border-top: 2px solid rgba(139,32,32,0.2);
+  }
+
+  .ledger-table tbody tr.item-row td:first-child {
+    padding-right: 28px;
+    color: #4a3010;
+    font-style: italic;
+  }
+
+  .ledger-table tbody tr.receipt-row {
+    background: rgba(26,74,26,0.07);
+    border-top: 2px solid rgba(26,74,26,0.2);
+  }
+
+  .ledger-table tbody tr.total-row {
+    background: var(--parchment-deep);
+    border-top: 3px double var(--border);
+    font-weight: 700;
+    color: var(--red-accent);
+  }
+
+  .ledger-table td {
+    padding: 8px 12px;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 1.8;
+    border-right: 1px solid rgba(184,134,11,0.15);
+  }
+
+  .ledger-table td.name-cell { text-align: right; }
+  .ledger-table td.num-cell { text-align: center; font-family: 'Amiri', serif; direction: ltr; }
+  .ledger-table td.debit { color: var(--red-accent); font-family: 'Amiri', serif; direction: ltr; }
+  .ledger-table td.credit { color: var(--green-accent); font-family: 'Amiri', serif; direction: ltr; }
+  .ledger-table td.balance { font-family: 'Amiri', serif; direction: ltr; font-weight: 600; }
+
+  .brought-fwd-row td { color: var(--gold); font-weight: 700; font-size: 1.05rem; }
+
+  /* Footer ornament */
+  .ledger-footer {
+    text-align: center;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 2px solid var(--border);
+    font-family: 'Noto Nastaliq Urdu', serif;
+    font-size: 0.9rem;
+    color: var(--gold);
+    position: relative;
+  }
+
+  .ledger-footer::before {
+    content: '';
+    position: absolute;
+    top: 3px; left: 10%; right: 10%;
+    height: 1px;
+    background: var(--border);
+    opacity: 0.4;
+  }
+
+  /* Decorative corner */
+  .corner {
+    position: absolute;
+    width: 40px; height: 40px;
+    opacity: 0.35;
+  }
+  .corner-tl { top: 16px; right: 16px; }
+  .corner-br { bottom: 16px; left: 16px; transform: rotate(180deg); }
+
+</style>
+</head>
+<body>
+
+<header class="header">
+  <h1><span class="ornament">❧</span>کھاتہ ترجمہ کار<span class="ornament">❧</span></h1>
+  <p class="sub">Ledger → Urdu Converter &nbsp;|&nbsp; Upload PDF · Translate · Download JPG</p>
+</header>
+
+<div class="upload-card">
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".pdf">
+    <span class="drop-icon">📄</span>
+    <span class="urdu-label">یہاں پی ڈی ایف فائل ڈالیں</span>
+    <p>Drag & drop your ledger PDF here, or <strong>click to browse</strong></p>
+    <div class="file-name" id="fileName"></div>
+  </div>
+
+  <button class="btn-convert" id="btnConvert" disabled>اردو میں تبدیل کریں &nbsp;→</button>
+
+  <div class="status-bar" id="statusBar"></div>
+</div>
+
+<div class="output-wrapper" id="outputWrapper">
+  <div class="output-actions">
+    <button class="btn-action btn-download" id="btnDownload">⬇ JPG ڈاؤن لوڈ کریں</button>
+  </div>
+  <div id="ledger-sheet">
+    <!-- Decorative SVG corners -->
+    <svg class="corner corner-tl" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 0 Q20 0 40 40 Q20 20 0 40 Q0 20 0 0Z" fill="#b8860b"/>
+    </svg>
+    <svg class="corner corner-br" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 0 Q20 0 40 40 Q20 20 0 40 Q0 20 0 0Z" fill="#b8860b"/>
+    </svg>
+    <div id="ledger-content"><!-- populated by JS --></div>
+  </div>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const btnConvert = document.getElementById('btnConvert');
+const statusBar = document.getElementById('statusBar');
+const outputWrapper = document.getElementById('outputWrapper');
+const ledgerContent = document.getElementById('ledger-content');
+const btnDownload = document.getElementById('btnDownload');
+const fileNameEl = document.getElementById('fileName');
+
+let selectedFile = null;
+
+// Drag & drop
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type === 'application/pdf') setFile(f);
+});
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+
+function setFile(f) {
+  selectedFile = f;
+  fileNameEl.textContent = '📎 ' + f.name;
+  fileNameEl.style.display = 'block';
+  btnConvert.disabled = false;
+}
+
+// Convert
+btnConvert.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  setStatus('loading', '⏳ کھاتہ پڑھا جا رہا ہے — تھوڑا انتظار کریں ...');
+  btnConvert.disabled = true;
+  outputWrapper.style.display = 'none';
+
+  try {
+    const base64 = await toBase64(selectedFile);
+    const result = await callClaude(base64);
+    renderLedger(result);
+    outputWrapper.style.display = 'block';
+    outputWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    clearStatus();
+  } catch (err) {
+    setStatus('error', 'Error: ' + err.message);
+  } finally {
+    btnConvert.disabled = false;
+  }
+});
+
+function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('File read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function callClaude(base64PDF) {
+  const systemPrompt = `You are an expert Urdu accountant and translator. You will receive a business ledger/account statement PDF.
+
+Extract ALL data from the ledger and return it as a single JSON object with this exact structure (no markdown, no backticks, pure JSON):
+
+{
+  "company": "Company name in Urdu",
+  "title": "Statement title in Urdu",
+  "account_name": "Account holder name in Urdu",
+  "account_no": "Account number (keep as-is)",
+  "date_from": "Start date in Urdu (e.g. ۱ مارچ ۲۰۲۶)",
+  "date_to": "End date in Urdu",
+  "currency": "PKR",
+  "brought_forward": "numeric value as string",
+  "transactions": [
+    {
+      "date": "date in Urdu",
+      "v_id": "voucher ID",
+      "type": "invoice|receipt|payment",
+      "type_urdu": "type name in Urdu (e.g. فروخت بل, وصولی)",
+      "items": [
+        {
+          "name_urdu": "Product name translated to Urdu",
+          "quantity": "qty as string",
+          "rate": "rate as string",
+          "total": "total as string"
+        }
+      ],
+      "debit": "debit amount or empty",
+      "credit": "credit amount or empty",
+      "balance": "running balance"
+    }
+  ],
+  "totals": {
+    "debit": "total debit",
+    "credit": "total credit",
+    "closing_balance": "closing balance"
+  }
+}
+
+Rules:
+- Translate ALL text to proper Urdu (Nastaliq style)
+- Keep all numeric values exactly as they appear (do NOT translate numbers to Urdu numerals)
+- For product names, translate meaningfully: e.g. "Cooling Pad 7090" → "کولنگ پیڈ ۷۰۹۰", "Fan Hub" → "پنکھا ہب", "Butterfly Fan Blade" → "تتلی پنکھا بلیڈ", "Water Rope" → "پانی کی رسی", "Belt Pulley" → "بیلٹ پلی", "Blade Jointer" → "بلیڈ جوڑنے والا" etc.
+- Translate dates: March=مارچ, 2026=۲۰۲۶ etc.
+- "Sale Invoice" → "فروخت بل", "Sale Receipt" → "فروخت وصولی", "Brought Forward" → "آگے لایا گیا"
+- Return ONLY the JSON object, nothing else`;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'anthropic-beta': 'pdfs-2024-09-25'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 4000,
+      system: systemPrompt,
+      messages: [{
+        role: 'user',
+        content: [{
+          type: 'document',
+          source: { type: 'base64', media_type: 'application/pdf', data: base64PDF }
+        }, {
+          type: 'text',
+          text: 'Please extract and translate this ledger to Urdu as instructed.'
+        }]
+      }]
+    })
+  });
+
+  const data = await resp.json();
+
+  if (!resp.ok) {
+    const msg = data?.error?.message || JSON.stringify(data);
+    throw new Error(`API ${resp.status}: ${msg}`);
+  }
+
+  const text = data.content.map(b => b.text || '').join('');
+  const clean = text.replace(/```json[\s\S]*?```|```[\s\S]*?```/g, m => m.replace(/```json|```/g, '')).trim();
+  try {
+    return JSON.parse(clean);
+  } catch(e) {
+    // Try to extract JSON from within the response
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error('Could not parse JSON from response. Raw: ' + clean.substring(0, 200));
+  }
+}
+
+function fmt(n) {
+  if (!n || n === '') return '—';
+  const num = parseFloat(String(n).replace(/,/g, ''));
+  if (isNaN(num)) return n;
+  return num.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function renderLedger(d) {
+  let html = `
+    <div class="ledger-header">
+      <div class="ledger-company">${d.company || 'JS Traders'}</div>
+      <div class="ledger-title">${d.title || 'مشترکہ کھاتہ بیان'}</div>
+      <div class="ledger-meta-grid">
+        <div class="meta-item"><span class="meta-label">کھاتہ دار:</span> <span>${d.account_name || ''}</span></div>
+        <div class="meta-item"><span class="meta-label">کھاتہ نمبر:</span> <span>${d.account_no || ''}</span></div>
+        <div class="meta-item"><span class="meta-label">تاریخ سے:</span> <span>${d.date_from || ''}</span></div>
+        <div class="meta-item"><span class="meta-label">تاریخ تک:</span> <span>${d.date_to || ''}</span></div>
+        <div class="meta-item"><span class="meta-label">کرنسی:</span> <span>${d.currency || 'PKR'}</span></div>
+      </div>
+    </div>
+
+    <table class="ledger-table">
+      <thead>
+        <tr>
+          <th>تاریخ</th>
+          <th>وی آئی ڈی</th>
+          <th>تفصیل / مصنوع</th>
+          <th>مقدار</th>
+          <th>ریٹ</th>
+          <th>کل</th>
+          <th>ڈیبٹ</th>
+          <th>کریڈٹ</th>
+          <th>بقایا</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="brought-fwd-row">
+          <td colspan="8" class="name-cell">آگے لایا گیا</td>
+          <td class="balance">${fmt(d.brought_forward)}</td>
+        </tr>`;
+
+  (d.transactions || []).forEach(tx => {
+    const rowClass = tx.type === 'receipt' || tx.type === 'payment' ? 'receipt-row' : 'invoice-row';
+    html += `
+        <tr class="${rowClass}">
+          <td>${tx.date || ''}</td>
+          <td>${tx.v_id || ''}</td>
+          <td class="name-cell"><strong>${tx.type_urdu || ''}</strong></td>
+          <td></td><td></td><td></td>
+          <td class="debit">${fmt(tx.debit)}</td>
+          <td class="credit">${fmt(tx.credit)}</td>
+          <td class="balance">${fmt(tx.balance)}</td>
+        </tr>`;
+
+    (tx.items || []).forEach(item => {
+      html += `
+        <tr class="item-row">
+          <td></td><td></td>
+          <td class="name-cell" style="padding-right:28px">${item.name_urdu || ''}</td>
+          <td class="num-cell">${item.quantity || ''}</td>
+          <td class="num-cell">${fmt(item.rate)}</td>
+          <td class="num-cell">${fmt(item.total)}</td>
+          <td></td><td></td><td></td>
+        </tr>`;
+    });
+  });
+
+  if (d.totals) {
+    html += `
+        <tr class="total-row">
+          <td colspan="6" class="name-cell" style="font-family:'Noto Nastaliq Urdu',serif">مجموعی</td>
+          <td class="debit">${fmt(d.totals.debit)}</td>
+          <td class="credit">${fmt(d.totals.credit)}</td>
+          <td class="balance">${fmt(d.totals.closing_balance)}</td>
+        </tr>`;
+  }
+
+  html += `
+      </tbody>
+    </table>
+    <div class="ledger-footer">
+      ❧ &nbsp; یہ بیان کمپیوٹر سے تیار کیا گیا ہے &nbsp; ❧
+    </div>`;
+
+  ledgerContent.innerHTML = html;
+}
+
+// Download as JPG
+btnDownload.addEventListener('click', async () => {
+  btnDownload.textContent = '⏳ تیار ہو رہا ہے...';
+  btnDownload.disabled = true;
+  try {
+    const sheet = document.getElementById('ledger-sheet');
+    const canvas = await html2canvas(sheet, {
+      scale: 2.5,
+      useCORS: true,
+      backgroundColor: '#f5edd6',
+      logging: false
+    });
+    const link = document.createElement('a');
+    link.download = 'کھاتہ-اردو.jpg';
+    link.href = canvas.toDataURL('image/jpeg', 0.95);
+    link.click();
+  } catch (e) {
+    alert('Download error: ' + e.message);
+  } finally {
+    btnDownload.textContent = '⬇ JPG ڈاؤن لوڈ کریں';
+    btnDownload.disabled = false;
+  }
+});
+
+function setStatus(type, msg) {
+  statusBar.className = 'status-bar ' + type;
+  statusBar.innerHTML = type === 'loading'
+    ? msg + '<span class="spinner"></span>'
+    : msg;
+}
+function clearStatus() {
+  statusBar.className = 'status-bar';
+  statusBar.style.display = 'none';
+}
+</script>
+</body>
+</html>
